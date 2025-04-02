@@ -3,12 +3,21 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras.utils import image_dataset_from_directory
+from tensorflow.keras.callbacks import EarlyStopping
+
 
 
 # Load images from the dataset
 dataset_path = "dataset_resized"
 batch_size = 32
 img_size = (256, 256)
+
+data_augmentation = keras.Sequential([
+    layers.RandomFlip("horizontal"),  # Flip images randomly
+    layers.RandomRotation(0.1),  # Slightly rotate images
+    layers.RandomBrightness(0.2),  # Adjust brightness
+    layers.RandomContrast(0.2)  # Adjust contrast
+])
 
 train_ds = image_dataset_from_directory(
     dataset_path,
@@ -18,6 +27,8 @@ train_ds = image_dataset_from_directory(
     subset="training",
     seed=123
 )
+
+train_ds = train_ds.map(lambda x, y: (data_augmentation(x, training=True), y))
 
 val_ds = image_dataset_from_directory(
     dataset_path,
@@ -43,7 +54,10 @@ model = keras.Sequential([
 
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
-model.fit(train_ds, validation_data=val_ds, epochs=50)
+early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
+
+model.fit(train_ds, validation_data=val_ds, epochs=50, callbacks=[early_stopping])
+
 
 loss, acc = model.evaluate(val_ds)
 print(f"Validation Accuracy: {acc:.2%}")

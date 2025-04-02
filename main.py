@@ -18,4 +18,4 @@ def classify_image(img_path):
         print("✅ This is a proper screenshot.")
 
 
-classify_image("testq3.jpg")
+classify_image("q7.png")
